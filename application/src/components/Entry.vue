@@ -1,0 +1,661 @@
+<template>
+  <div class="entry">
+    <template
+      v-if="pairs.length != 1 && !confirmedPairIndex"
+    >
+      <p style="">Found multiple potential entity-property pairs:</p>
+      <el-select v-model="selectedPairIndex" placeholder="Select">
+        <el-option
+          v-for="(pair, idx) in pairs"
+          :key="`pair-${idx}`"
+          :value="idx"
+        >
+          <span style="float: left; color: #8492A6;">{{ pair.entity }}</span>
+          <span style="float: right; color: #8492a6; font-size: 13px">{{ pair.property }}</span>
+        </el-option>
+      </el-select>
+      <p>Entity: <span style="font-weight: bold;">{{pairs[selectedPairIndex].entity}}</span></p>
+      <p>Property: <span style="font-weight: bold;">{{pairs[selectedPairIndex].property}}</span></p>
+      <hr>
+      <p>
+        Found DBpedia page <a :href="'http://dbpedia.org/page/'+pairs[selectedPairIndex].pageName.replace(/\s/g, '_')" target="blank" style="font-weight: bold;">{{pairs[selectedPairIndex].pageName}}</a>.
+      </p>
+      <hr>
+      <div class="button-group">
+        <el-button type="danger">Discard</el-button>
+        <el-button type="info" @click="confirmPairSelection">Confirm</el-button>
+      </div>
+      <div class="clearfix" style="font-size: 10px; color: #8492A6;">
+        *You can "Confirm" 1 pair to continue; or "Discard" all options if none is what you are expecting.
+      </div>
+    </template>
+    <template v-if="(confirmedPairIndex !== null) && !isResultDiscarded">
+      <el-popover
+        ref="entityPopover"
+        placement="top"
+        width="160"
+        trigger="hover">
+        <p>Click buttons below to copy:</p>
+        <div style="text-align: center; margin: 0">
+          <el-button size="mini" type="text" v-clipboard:copy="pentity" @click="toast">text</el-button>
+          <el-button size="mini" type="text" v-clipboard:copy="entityLink" @click="toast">link</el-button>
+        </div>
+      </el-popover>
+      <p v-popover:entityPopover>Entity: <span style="font-weight: bold; text-decoration: underline;">{{pentity}}</span></p>
+      <p>Property: <span style="font-weight: bold;">{{pproperty}}</span></p>
+      <hr>
+      <p style="color: #8492A6;" v-show="!showConfirmedResult">
+        Found DBpedia page <a :href="'http://dbpedia.org/page/'+pageName.replace(/\s/g, '_')" target="blank" style="color: #8492A6;"><strong>{{pageName}}</strong></a>, and it's <strong>{{propertyList.length}}</strong> propert{{propertyList.length > 1 ? 'ies' : 'y'}}. <em v-if="Object.keys(availableRecipes).length > 0">(And {{Object.keys(availableRecipes).length}} custom recipe{{Object.keys(availableRecipes).length === 1 ? '' : 's'}}!)</em>
+      </p>
+      <hr v-show="!showConfirmedResult">
+      <el-tabs type="border-card" v-show="!showConfirmedResult">
+        <el-tab-pane label="Suggestion">
+          <p style="font-size: 12px; color: #8492A6;">Property suggestions:</p>
+          <template v-if="propertySuggestionList.length === 0">
+            <div style="height: 50px; font-size: 12px; color: #8492A6; display: flex; align-items: center; justify-content: center;">
+              No suggestion.
+            </div>
+          </template>
+          <template v-if="propertySuggestionList.length !== 0">
+            <el-select v-model="selectedPropertySuggestion" @change="selectProperty">
+              <el-option
+                v-for="(item, index) in propertySuggestionList"
+                :key="index"
+                :value="item"
+              >
+              </el-option>
+            </el-select>
+            <p style="font-size: 12px; color: #8492A6;">Selected property value:</p>
+            <template v-if="propertyList.indexOf(selectedPropertySuggestion) === -1" v-loading="isLoadingSuggestedRecipeResult">
+              <div class="text-box">
+                {{suggestedRecipeResult ? suggestedRecipeResult.result || suggestedRecipeResult.error : 'loading...'}}
+              </div>
+              <el-button style="float: right; clear: both; color: #475669;" type="text" size="small" @click="getSuggestedRecipeValue">Reload</el-button>
+            </template>
+            <div class="text-box" v-if="propertyList.indexOf(selectedPropertySuggestion) !== -1">
+              <template v-if="suggestion.length === 1">
+                <property-value :property="suggestion[0]"/>
+              </template>
+              <template v-if="suggestion.length > 1">
+                <el-checkbox
+                  v-for="(item, idx) in suggestion"
+                  v-model="selectedPropertyMultiValueSelection"
+                  :label="idx"
+                  :key="idx"
+                >
+                  <property-value :property="suggestion[idx]"/>
+                </el-checkbox>
+              </template>
+            </div>
+            <div class="button-group">
+              <el-button type="danger" @click="discardProperty(selectedPropertySuggestion)">Discard</el-button>
+              <el-button type="info" @click="confirmPropertySelection(selectedPropertySuggestion, propertyList.indexOf(selectedPropertySuggestion) === -1 ? {value: suggestedRecipeResult.result} || '' : getSelectedPropertyValue('suggestion'))">Confirm</el-button>
+            </div>
+            <div class="clearfix" style="font-size: 10px; color: #8492A6;">
+              *If the suggested entity/property is relevant, click "Confirm"; else, click "Discard". If multiple suggestions are provided, by clicking "Confirm"/"Discard", future appearance of the selected suggestion will be affected accordingly.
+            </div>
+          </template>
+        </el-tab-pane>
+        <el-tab-pane label="All" v-if="propertyValue">
+          <p style="font-size: 12px; color: #8492A6;">All properties:</p>
+          <el-select v-model="selectedProperty" @change="selectProperty">
+            <el-option v-for="(item, index) in propertyList" :key="index" :value="item"/>
+          </el-select>
+          <p style="font-size: 12px; color: #8492A6;">Selected property value:</p>
+          <div class="text-box">
+            <template v-if="propertyValue.length === 1">
+              <property-value :property="propertyValue[0]"/>
+            </template>
+            <template v-if="propertyValue.length > 1">
+              <el-checkbox
+                v-for="(item, idx) in propertyValue"
+                v-model="selectedPropertyMultiValueSelection"
+                :label="idx"
+                :key="idx"
+              >
+                <property-value :property="propertyValue[idx]"/>
+              </el-checkbox>
+            </template>
+          </div>
+          <div class="button-group">
+            <el-button type="danger" @click="discardProperty(selectedProperty)">Discard</el-button>
+            <el-button type="info" @click="confirmPropertySelection(selectedProperty, getSelectedPropertyValue('all'))">Confirm</el-button>
+          </div>
+          <div class="clearfix" style="font-size: 10px; color: #8492A6;">
+            *If the suggested entity/property is relevant, click "Confirm"; else, click "Discard". If multiple suggestions are provided, by clicking "Confirm"/"Discard", future appearance of the selected suggestion will be affected accordingly.
+          </div>
+        </el-tab-pane>
+        <el-tab-pane label="Custom">
+          <template v-show="Object.keys(availableRecipes).length > 0">
+            <p class="label">Available Recipe:</p>
+            <el-select v-model="selectedRecipe" @change="selectRecipe" placeholder="Select">
+              <el-option
+                v-for="(key, idx) in Object.keys(availableRecipes)"
+                :key="idx"
+                :value="key"
+                :label="availableRecipes[key].name">
+              </el-option>
+            </el-select>
+          </template>
+          <p class="label">All properties:</p>
+          <el-select v-model="recipeProperties" multiple placeholder="Select">
+            <el-option
+              v-for="item in propertyList"
+              :key="item"
+              :value="item"
+              :label="item">
+            </el-option>
+          </el-select>
+          <p class="label" v-show="recipeProperties.length > 0">Property value preview:</p>
+          <template v-for="(item, idx) in recipeProperties">
+            <el-collapse>
+              <el-collapse-item :title="(idx+1)+'.'+item">
+                <p class="label">Use <strong>data[{{idx}}]</strong> to refer to:</p>
+                <pre class="text-box" v-highlightjs>
+                  <code class="json">{{pageData[item][0].value}}</code>
+                </pre>
+                <p class="label">Use <strong>rawData[{{idx}}]</strong> to refer to:</p>
+                <pre class="text-box" v-highlightjs>
+                  <code class="json">{{pageData[item]}}</code>
+                </pre>
+              </el-collapse-item>
+            </el-collapse>
+          </template>
+          <p class="label">Recipe editor:</p>
+          <el-input
+            type="textarea"
+            class="test"
+            :autosize="{ minRows: 4, maxRows: 20}"
+            placeholder="Write your own recipe in *JavaScript*. Note: 1. Add semi-colon after every expression; 2. Add 'return yourVariableName' at the end to return the result you want."
+            v-model="recipeScript"
+          />
+          <div style="padding: 16px 0px 4px 0px;">
+            <el-button-group style="float: right;">
+              <el-button type="danger" size="small" @click="removeRecipe">Remove</el-button>
+              <el-button type="success" size="small" @click="saveRecipe">Save</el-button>
+              <el-button type="primary" size="small" @click="runCustomRecipe" :loading="isLoadingRecipeResult">Run</el-button>
+            </el-button-group>
+            <el-button style="float: right; clear: both; color: #475669;" type="text" size="small" @click="resetRecipe">Reset</el-button>
+          </div>
+          <p class="label">Recipe Name:</p>
+          <el-input placeholder="custom recipe" v-model="recipeName"></el-input>
+          <p class="label">Recipe Value:</p>
+          <div class="text-box" :class="{ error: recipeResult && recipeResult.error }"
+            v-loading="isLoadingRecipeResult"
+          >
+            {{ recipeResult ? recipeResult.result || recipeResult.error : ''}}
+          </div>
+          <template v-if="selectedRecipe && recipeResult && recipeResult.result">
+            <div class="button-group">
+              <el-button type="danger" @click="discardProperty(selectedRecipe)">Discard</el-button>
+              <el-button type="info" @click="confirmPropertySelection(selectedRecipe, {value: recipeResult.result})">Confirm</el-button>
+            </div>
+            <div class="clearfix" style="font-size: 10px; color: #8492A6;">
+              *If the suggested entity/property is relevant, click "Confirm"; else, click "Discard". If multiple suggestions are provided, by clicking "Confirm"/"Discard", future appearance of the selected suggestion will be affected accordingly.
+            </div>
+          </template>
+        </el-tab-pane>
+      </el-tabs>
+      <template v-if="showConfirmedResult">
+        <p class="text-box-title">
+          Confirmed Property:
+        </p>
+        <div class="text-box" style="background-color: white; width: auto">
+          {{confirmedProperty}}
+        </div>
+        <p class="text-box-title">
+          Content suggestions:
+        </p>
+        <content-suggestion :content="getConfirmedContent()"/>
+        <content-suggestion :content="getSimpleSentence()"/>
+      </template>
+    </template>
+    <template v-if="isResultDiscarded">
+      <p style="color: #8492A6;">
+        Result discarded.
+      </p>
+    </template>
+  </div>
+</template>
+
+<script>
+import Vue from 'vue'
+import { mapState } from 'vuex'
+import fuzz from 'fuzzball'
+import pluralize from 'pluralize'
+import PropertyValue from './PropertyValue'
+import ContentSuggestion from './ContentSuggestion'
+export default {
+  name: 'entry',
+  components: {
+    PropertyValue, ContentSuggestion
+  },
+  props: [
+    'entryData'
+  ],
+  data () {
+    return {
+      selectedPairIndex: 0,
+      confirmedPairIndex: null,
+      //
+      // ↓↓↓All variable below are data of the confirmed pair↓↓↓
+      //
+      propertyList: [],
+      propertySuggestionList: [],
+      selectedPropertyMultiValueSelection: [0],
+      selectedProperty: '',
+      selectedPropertySuggestion: '',
+      suggestedRecipeResult: null,
+      isLoadingSuggestedRecipeResult: false,
+      recipeProperties: [],
+      recipeName: '',
+      recipeScript: '',
+      isLoadingRecipeResult: false,
+      recipeResult: null,
+      availableRecipes: [],
+      selectedRecipe: '',
+      confirmedProperty: null,
+      confirmedPropertyValue: null,
+      // User can choose whether to auto confirm suggestion selection when only one available.
+      shouldAutoConfirmTheOnlySuggestion: false,
+      showConfirmedResult: false,
+      isResultDiscarded: false
+    }
+  },
+  computed: {
+    ...mapState({
+      isProcessingContent: state => state.isProcessingContent,
+      entries: state => state.entries,
+      processingStatusMsg: state => state.processingStatusMsg,
+      processingErrorMsg: state => state.processingErrorMsg
+    }),
+    entry () {
+      return this.entryData.entry
+    },
+    pairs () {
+      return this.entryData.pairs
+    },
+    //
+    // ↓↓↓All variable below are data of the confirmed pair↓↓↓
+    //
+    pair () {
+      return this.entryData.pairs[this.confirmedPairIndex]
+    },
+    // Potential entity
+    pentity () {
+      return this.pair.entity
+    },
+    entityLink () {
+      return 'http://dbpedia.org/page/' + this.pentity.replace(/ /g, '_')
+    },
+    // Potential property, to avoid naming collision
+    pproperty () {
+      return this.pair.property
+    },
+    pageName () {
+      return this.pair.pageName
+    },
+    pageData () {
+      return this.pair.pageData
+    },
+    suggestion () {
+      return this.pageData[this.selectedPropertySuggestion]
+    },
+    // Value of selected property in the All tab
+    propertyValue () {
+      return this.pageData[this.selectedProperty]
+    }
+  },
+  watch: {
+    confirmedPairIndex (newValue) {
+      this.propertyList = []
+      this.propertySuggestionList = []
+      this.selectedProperty = ''
+      this.selectedPropertySuggestion = ''
+      this.recipeProperties = []
+      this.customPropertyOptions = []
+      this.confirmedProperty = null
+      if (newValue === null) {
+        return
+      }
+
+      let that = this
+      this.propertyList = Object.keys(this.pair.pageData)
+      this.propertyList.sort((a, b) => {
+        let scoreA = fuzz.token_set_ratio(that.pproperty, a)
+        let scoreB = fuzz.token_set_ratio(that.pproperty, b)
+        return scoreB - scoreA
+      })
+      // Refresh available recipes, this needs the property list
+      this.refreshAvailableRecipe()
+
+      let preferences = this.$ls.get('preferences', {})
+      let preference = preferences[this.pproperty]
+
+      // If preference exist, suggest preference
+      if (preference !== undefined && Object.keys(this.availableRecipes).indexOf(preference) !== -1) {
+        this.propertySuggestionList.push(preference)
+        this.getSuggestedRecipeValue()
+      // else, generate suggestion with fuzzy matching scores
+      } else {
+        for (let i = 0; i < this.propertyList.length; i++) {
+          if (fuzz.token_set_ratio(this.pproperty, this.propertyList[i]) === 100) {
+            this.propertySuggestionList.push(this.propertyList[i])
+          }
+        }
+        let recipeKeys = Object.keys(this.availableRecipes)
+        for (let i = 0; i < recipeKeys.length; i++) {
+          if (fuzz.token_set_ratio(this.pproperty, recipeKeys[i]) === 100) {
+            this.propertySuggestionList.push(recipeKeys[i])
+          }
+        }
+      }
+
+      if (this.propertyList.length > 0) {
+        this.selectedProperty = this.propertyList[0]
+      }
+      if (this.propertySuggestionList.length === 1 && this.shouldAutoConfirmTheOnlySuggestion) {
+        this.confirmedProperty = this.propertySuggestionList[0]
+      }
+      if (this.propertySuggestionList.length > 0) {
+        this.selectedPropertySuggestion = this.propertySuggestionList[0]
+        if (Object.keys(this.availableRecipes).indexOf(this.propertySuggestionList[0]) !== -1) {
+          this.getSuggestedRecipeValue()
+        }
+      }
+    }
+  },
+  created () {
+    if (this.pairs.length === 1) {
+      this.confirmedPairIndex = 0
+    }
+  },
+  methods: {
+    confirmPairSelection () {
+      this.confirmedPairIndex = this.selectedPairIndex
+    },
+    confirmPropertySelection (property, value) {
+      this.confirmedProperty = property
+      this.confirmedPropertyValue = value
+      this.showConfirmedResult = true
+
+      // Save preference
+      let preferences = this.$ls.get('preferences', {})
+      this.$ls.set('preferences', {
+        ...preferences,
+        [this.pproperty]: this.confirmedProperty
+      })
+    },
+    discardProperty (property) {
+      let preferences = this.$ls.get('preferences', {})
+      let preference = preferences[this.pproperty]
+      console.log(preference)
+      console.log(this.pproperty)
+      console.log(preference === property)
+      if (preference !== undefined && preference === property) {
+        Vue.delete(preferences, this.pproperty)
+        console.log(preferences)
+        this.$ls.set('preferences', preferences)
+      }
+      this.isResultDiscarded = true
+    },
+    selectProperty () {
+      this.selectedPropertyMultiValueSelection = [0]
+    },
+    getSelectedPropertyValue (type) {
+      let val = null
+      if (type === 'all') {
+        val = this.pageData[this.selectedProperty]
+      } else if (type === 'suggestion') {
+        val = this.pageData[this.selectedPropertySuggestion]
+      }
+
+      let getValue = (data) => {
+        if (data.type === 'uri') {
+          return {
+            value: data.value.substr(data.value.lastIndexOf('/') + 1).replace(/_/g, ' '),
+            uri: data.value
+          }
+        } else {
+          return { value: data.value }
+        }
+      }
+      // The length can't be less than 1
+      if (val.length === 1) {
+        return getValue(val[0])
+      }
+
+      // else if val.length > 1
+      let result = []
+      for (let i = 0; i < this.selectedPropertyMultiValueSelection.length; i++) {
+        result.push(getValue(val[this.selectedPropertyMultiValueSelection[i]]))
+      }
+      return result
+    },
+    selectRecipe (key) {
+      let recipe = this.availableRecipes[key]
+      this.recipeName = recipe.name
+      this.recipeScript = recipe.script
+      this.recipeProperties = recipe.properties
+      this.recipeResult = null
+    },
+    runCustomRecipe () {
+      let that = this
+
+      this.recipeResult = null
+      this.isLoadingRecipeResult = true
+      let formData = new FormData()
+      formData.append('recipe', this.recipeScript)
+      formData.append('rawData', JSON.stringify(this.recipeProperties.map(key => {
+        return this.pageData[key]
+      })))
+      formData.append('data', JSON.stringify(this.recipeProperties.map(key => {
+        return this.pageData[key][0].value
+      })))
+      this.$http.post('http://svm-kc1u16-test.ecs.soton.ac.uk:8888/custom', formData).then(res => {
+        that.recipeResult = res.body
+        that.isLoadingRecipeResult = false
+      }, res => {
+        that.recipeResult = res.body
+        that.isLoadingRecipeResult = false
+      })
+    },
+    getSuggestedRecipeValue () {
+      let that = this
+      this.suggestedRecipeResult = null
+      this.isLoadingSuggestedRecipeResult = true
+      let recipe = this.availableRecipes[this.propertySuggestionList[0]]
+      let formData = new FormData()
+      formData.append('recipe', recipe.script)
+      formData.append('rawData', JSON.stringify(recipe.properties.map(key => {
+        return that.pageData[key]
+      })))
+      formData.append('data', JSON.stringify(recipe.properties.map(key => {
+        return that.pageData[key][0].value
+      })))
+      this.$http.post('http://svm-kc1u16-test.ecs.soton.ac.uk:8888/custom', formData).then(res => {
+        that.suggestedRecipeResult = res.body
+        that.isLoadingSuggestedRecipeResult = false
+      }, res => {
+        that.suggestedRecipeResult = res.body
+        that.isLoadingSuggestedRecipeResult = false
+      })
+    },
+    saveRecipe () {
+      let newRecipeName = this.recipeName || 'Custom Recipe'
+      let recipes = this.$ls.get('recipes', {})
+      if (this.selectedRecipe !== '') {
+        Vue.delete(recipes, this.selectedRecipe)
+      }
+      this.selectedRecipe = this.recipeName
+      this.$ls.set('recipes', {
+        ...recipes,
+        [newRecipeName]: {
+          name: newRecipeName,
+          properties: [...this.recipeProperties],
+          script: this.recipeScript
+        }})
+      this.refreshAvailableRecipe()
+    },
+    removeRecipe () {
+      Vue.delete(this.availableRecipes, this.recipeName)
+      let recipes = this.$ls.get('recipes', {})
+      Vue.delete(recipes, this.recipeName)
+      this.$ls.set('recipes', recipes)
+      this.resetRecipe()
+    },
+    refreshAvailableRecipe () {
+      let recipes = this.$ls.get('recipes', {})
+      console.log(recipes)
+      let that = this
+      let availableRecipesKeys = Object.keys(recipes).filter(key => {
+        for (let i = 0; i < recipes[key].properties.length; i++) {
+          if (that.propertyList.indexOf(recipes[key].properties[i]) === -1) {
+            console.log('fail')
+            console.log(that.propertyList)
+            console.log(key)
+            console.log(recipes[key].properties[i])
+            return false
+          }
+        }
+        console.log('success')
+        console.log(key)
+        return true
+      })
+      let _availableRecipes = {}
+      for (let i = 0; i < availableRecipesKeys.length; i++) {
+        _availableRecipes = {
+          ..._availableRecipes,
+          [availableRecipesKeys[i]]: recipes[availableRecipesKeys[i]]
+        }
+      }
+      this.availableRecipes = _availableRecipes
+    },
+    resetRecipe () {
+      this.recipeName = ''
+      this.recipeScript = ''
+      this.recipeProperties = []
+      this.selectedRecipe = ''
+      this.recipeResult = null
+    },
+    getConfirmedContent () {
+      let getValue = data => {
+        if (data.uri === undefined) {
+          return data.value
+        }
+        return `<a href="${data.uri}" target="blank">${data.value}</a>`
+      }
+      if (this.confirmedPropertyValue instanceof Array) {
+        let result = ''
+        for (let i = 0; i < this.confirmedPropertyValue.length; i++) {
+          result += `${getValue(this.confirmedPropertyValue[i])}<br>`
+        }
+        return result
+      }
+
+      return getValue(this.confirmedPropertyValue)
+    },
+    getSimpleSentence () {
+      let getValue = data => {
+        if (data.uri === undefined) {
+          return data.value
+        }
+        return `<a href="${data.uri}" target="blank">${data.value}</a>`
+      }
+      if (this.confirmedPropertyValue instanceof Array) {
+        if (this.confirmedPropertyValue.length > 1) {
+          let result = `The ${pluralize(this.confirmedProperty)} of ${this.pentity} are `
+          for (let i = 0; i < this.confirmedPropertyValue.length; i++) {
+            let val = getValue(this.confirmedPropertyValue[i])
+            if (i === 0) {
+              result += `${val}`
+            } else if (i === this.confirmedPropertyValue.length - 1) {
+              result += `, and ${val}.`
+            } else {
+              result += `, ${val}`
+            }
+          }
+          return result
+        } else {
+          return `The ${pluralize.singular(this.confirmedProperty)} of ${this.pentity} is ${getValue(this.confirmedPropertyValue[0])}.`
+        }
+      }
+      return `The ${pluralize.singular(this.confirmedProperty)} of ${this.pentity} is ${getValue(this.confirmedPropertyValue)}.`
+    },
+    toast (e, msg = 'Copied!', type = 'success') {
+      this.$message({
+        message: msg,
+        type: type
+      })
+    }
+  }
+}
+</script>
+
+<!-- Add "scoped" attribute to limit CSS to this component only -->
+<style scoped>
+a {
+  color: #1f2d3d;
+}
+.error {
+  color: red;
+}
+.clearfix {
+  clear: both;
+}
+.label {
+  clear: both;
+  font-size: 12px; 
+  color: #8492A6;
+}
+.el-select {
+  width: 100%;
+}
+hr {
+  border-top: 0.5px dashed #8492A6;
+  clear: both;
+}
+.button-group {
+  float: right; 
+  padding: 16px 0px 4px 0px;
+}
+.text-box-title {
+  color: #8492A6; 
+  font-weight: bold;
+}
+.text-box {
+  width: 176px;
+  max-height: 120px;
+  border: 1px solid #dfe6ec;
+  padding: 8px;
+  border-radius: 5px;
+  overflow: auto;
+}
+.hljs {
+  background: white;
+  overflow: visible;
+  margin-top: -30px;
+  margin-bottom: -43px;
+  line-height: 1;
+}
+.el-collapse-item__header {
+  color: #1f2d3d;
+}
+.el-transfer-panel {
+  width: 100%;
+}
+.el-transfer__buttons {
+  width: 100%;
+  padding: 10px 0;
+  display: flex;
+}
+.el-transfer__buttons .el-button {
+  transform: rotate(90deg);
+}
+.el-transfer__buttons .el-button:first-child {
+  margin-bottom: 0;
+}
+.el-checkbox {
+  margin-left: 0;
+}
+</style>

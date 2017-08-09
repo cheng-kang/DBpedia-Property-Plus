@@ -1,0 +1,8 @@
+export const UPDATE_IS_PROCESSING_CONTENT = 'update_is_processing_content'
+export const UPDATE_PROCESSING_STATE_MSG = 'update_processing_state_msg'
+export const UPDATE_PROCESSING_ERROR_MSG = 'update_processing_error_msg'
+export const UPDATE_ENTRIES = 'update_entries'
+export const START_PROCESSING_CONTENT = 'start_processing_content'
+export const STOP_PROCESSING_CONTENT = 'stop_processing_content'
+export const PROCESS_CONTENT = 'process_content'
+export const UPDATE_CONTENT = 'update_content'
