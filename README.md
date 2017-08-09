@@ -6,21 +6,22 @@ A tool that supports you to include DBpedia data (properties of DBpedia entity) 
 
 ## Screenshots
 
-1. General Usage
-
-<img src="./other/1.gif" width="250">
-
+1. General Usage 
 2. Custom Recipe - 1, create with property data 
-
-<img src="./other/2.gif" width="250">
-
 3. Custom Recipe - 2, run & save
-
-<img src="./other/3.gif" width="250">
-
 4. Custom Recipe - 3, custom recipe suggestion
+<p align="center">
+<img src="./other/1.gif" width="200" style="margin-right: 20px;">
+<img src="./other/2.gif" width="200" style="margin-right: 20px;">
+<img src="./other/3.gif" width="200" style="margin-right: 20px;">
+<img src="./other/4.gif" width="200">
+    </p>
 
-<img src="./other/4.gif" width="250">
+
+
+
+
+
 
 ## Try it yourself
 
