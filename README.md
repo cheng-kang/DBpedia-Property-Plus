@@ -8,6 +8,40 @@ A tool that supports you to include DBpedia data (properties of DBpedia entity) 
 
 - **Property Suggestion**: based on Named Entity Recognition result on user input.
 - **"Custom Recipe"**: generating custom property using available DBpedia property data with custom scripts.
+
+    More complex examples:
+    
+    ```JavaScript
+    //
+    // Custom Recipe: age
+    // Properties: birth date
+    // Example: age of Yao Ming
+    // Result: 36
+    let diff = Math.floor((new Date()).getTime() - (new Date(data[0])).getTime());
+    let day = 1000 * 60 * 60 * 24;
+
+    let days = Math.floor(diff/day);
+    let months = Math.floor(days/31);
+    let years = Math.floor(months/12);
+
+    return years
+    ```
+    
+    ```JavaScript
+    //
+    // Custom Recipe: death age
+    // Properties: birth date, death date
+    // Example: age of Albert Einstein
+    // Result: 74
+    let diff = Math.floor((new Date(data[0])).getTime() - (new Date(data[1])).getTime());
+    let day = 1000 * 60 * 60 * 24;
+
+    let days = Math.floor(diff/day);
+    let months = Math.floor(days/31);
+    let years = Math.floor(months/12);
+
+    return years
+    ```
 - **Preference Suggestion**: users' preferences of properties will be stored locally and be suggested with higher priorty next time.
 
 ## Screenshots
