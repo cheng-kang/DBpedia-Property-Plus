@@ -235,10 +235,64 @@ export default {
   ],
   data () {
     return {
+      //
+      // Multiple pairs might be available,
+      // users need to confirm their selection to proceed.
+      //
+      //    selectedPairIndex: is the current selection
+      //    confirmedPairIndex: is the confirmed selection
       selectedPairIndex: 0,
       confirmedPairIndex: null,
       //
-      // ↓↓↓All variable below are data of the confirmed pair↓↓↓
+      // ↓↓↓All variables below are data of the confirmed pair↓↓↓
+      //
+
+      //    - propertyList: (Tab: All)
+      //        is the list of all available property names from DBpedia.
+      //    - propertySuggestionList: (Tab: Suggestion)
+      //        is the list of generated suggestion property/custom recipe names
+      //    - selectedPropertyMultiValueSelection: (Tab: All & Suggestion)
+      //        is the list of the selection among multiple values of a property
+      //        e.g. Albert Einstein's children: ['Hans'] (available choices ['Hans', 'Lieserl'])
+      //    - selectedProperty: (Tab: All)
+      //        is the selected property name
+      //    - selectedPropertySuggestion: (Tab: Suggestion)
+      //        is the selected property/custom recipe name in Tab: Suggestion
+      //    - suggestedRecipeResult: (Tab: Suggestion)
+      //        is the value of the suggested recipe result
+      //    - isLoadingSuggestedRecipeResult: (Tab: Suggestion)
+      //        when the client is waiting for suggested recipe result from the server,
+      //        `isLoadingSuggestedRecipeResult` will be set to true; otherwise, false.
+      //    - recipeProperties: (Tab: Custom)
+      //        is the list of related properties of the selected custom recipe
+      //    - recipeName: (Tab: Custom)
+      //        is the name of a new recipe or the selected recipe.
+      //        It's binded with the recipeName input field.
+      //    - recipeScript: (Tab: Custom)
+      //        is the script of a new recipe or the selected recipe
+      //        It's binded with the recipeSript input field.
+      //    - recipeResult: (Tab: Custom)
+      //        is the value of the current recipe result
+      //    - isLoadingRecipeResult: (Tab: Custom)
+      //        when the client is waiting for selected recipe result from the server,
+      //        `isLoadingRecipeResult` will be set to true; otherwise, false.
+      //    - availableRecipes: (Tab: Suggestion & Custom)
+      //        is the list of recipes that are available to the current entity.
+      //        A recipe is available to an entity if the entity contains all properties
+      //        in that recipe.
+      //    - selectedRecipe: (Tab: Custom)
+      //        is the name of the selected recipe.
+      //        It's binded with the selectedRecipe select-ui element.
+      //    - confirmedProperty: (Tab: Suggestion & All & Custom)
+      //        is the name of the confirmed property/custom recipe name.
+      //    - confirmedPropertyValue: (Tab: Suggestion & All & Custom)
+      //        is the value of confirmedProperty
+      //    - shouldAutoConfirmTheOnlySuggestion: (not available at the moment)
+      //        if the value is set to true, auto confirm the selection of the only suggestion.
+      //    - showConfirmedResult:
+      //        a boolean value to toggle the appearance of the confirm result HTML
+      //    - isResultDiscarded:
+      //        a boolean value to record if the result is discarded. UI will be changed accordingly.
       //
       propertyList: [],
       propertySuggestionList: [],
@@ -250,13 +304,12 @@ export default {
       recipeProperties: [],
       recipeName: '',
       recipeScript: '',
-      isLoadingRecipeResult: false,
       recipeResult: null,
+      isLoadingRecipeResult: false,
       availableRecipes: [],
       selectedRecipe: '',
       confirmedProperty: null,
       confirmedPropertyValue: null,
-      // User can choose whether to auto confirm suggestion selection when only one available.
       shouldAutoConfirmTheOnlySuggestion: false,
       showConfirmedResult: false,
       isResultDiscarded: false
@@ -281,14 +334,14 @@ export default {
     pair () {
       return this.entryData.pairs[this.confirmedPairIndex]
     },
-    // Potential entity
+    // Potential entity, prefix 'p' is used to avoid naming collision
     pentity () {
       return this.pair.entity
     },
     entityLink () {
       return 'http://dbpedia.org/page/' + this.pentity.replace(/ /g, '_')
     },
-    // Potential property, to avoid naming collision
+    // Potential property, prefix 'p' is used to avoid naming collision
     pproperty () {
       return this.pair.property
     },
@@ -308,6 +361,7 @@ export default {
   },
   watch: {
     confirmedPairIndex (newValue) {
+      // Reset related data
       this.propertyList = []
       this.propertySuggestionList = []
       this.selectedProperty = ''
@@ -315,10 +369,14 @@ export default {
       this.recipeProperties = []
       this.customPropertyOptions = []
       this.confirmedProperty = null
-      if (newValue === null) {
-        return
-      }
 
+      // In case something unexpected happens.
+      if (newValue === null) { return }
+
+      //
+      // Init propertyList:
+      //    And sort the list with fuzzy matching with pproperty.
+      //
       let that = this
       this.propertyList = Object.keys(this.pair.pageData)
       this.propertyList.sort((a, b) => {
@@ -326,42 +384,68 @@ export default {
         let scoreB = fuzz.token_set_ratio(that.pproperty, b)
         return scoreB - scoreA
       })
-      // Refresh available recipes, this needs the property list
+      // Refresh available recipes:
+      //    This process involves the property list,
+      //    thus it should be invoked after initializing propertyList.
       this.refreshAvailableRecipe()
 
+      //
+      // Generating Suggestions:
+      //     Property names/custom recipe names
+      //     with 100 score by fuzzy matching with pproperty.
+      //
+      for (let i = 0; i < this.propertyList.length; i++) {
+        if (fuzz.token_set_ratio(this.pproperty, this.propertyList[i]) === 100) {
+          this.propertySuggestionList.push(this.propertyList[i])
+        }
+      }
+      let recipeKeys = Object.keys(this.availableRecipes)
+      for (let i = 0; i < recipeKeys.length; i++) {
+        if (fuzz.token_set_ratio(this.pproperty, recipeKeys[i]) === 100) {
+          this.propertySuggestionList.push(recipeKeys[i])
+        }
+      }
+
+      //
+      // Check Preference:
+      //    If preference exists, put it in the first place.
+      //
       let preferences = this.$ls.get('preferences', {})
       let preference = preferences[this.pproperty]
 
       // If preference exist, suggest preference
       if (preference !== undefined && Object.keys(this.availableRecipes).indexOf(preference) !== -1) {
-        this.propertySuggestionList.push(preference)
-        this.getSuggestedRecipeValue()
-      // else, generate suggestion with fuzzy matching scores
-      } else {
-        for (let i = 0; i < this.propertyList.length; i++) {
-          if (fuzz.token_set_ratio(this.pproperty, this.propertyList[i]) === 100) {
-            this.propertySuggestionList.push(this.propertyList[i])
-          }
+        let preferenceIndex = this.propertySuggestionList.indexOf(preference)
+        if (preferenceIndex !== -1) {
+          // When it's already in the suggestion list,
+          // remove it firstly.
+          this.propertySuggestionList.splice(preferenceIndex, 1)
         }
-        let recipeKeys = Object.keys(this.availableRecipes)
-        for (let i = 0; i < recipeKeys.length; i++) {
-          if (fuzz.token_set_ratio(this.pproperty, recipeKeys[i]) === 100) {
-            this.propertySuggestionList.push(recipeKeys[i])
-          }
-        }
+        // Insert preference at index 0
+        this.propertySuggestionList.splice(0, 0, preference)
       }
 
+      //
+      // Init select-ui elements default value
+      //
+
+      // Tab: All
       if (this.propertyList.length > 0) {
         this.selectedProperty = this.propertyList[0]
       }
-      if (this.propertySuggestionList.length === 1 && this.shouldAutoConfirmTheOnlySuggestion) {
-        this.confirmedProperty = this.propertySuggestionList[0]
-      }
+      // Tab: Suggestion
       if (this.propertySuggestionList.length > 0) {
         this.selectedPropertySuggestion = this.propertySuggestionList[0]
-        if (Object.keys(this.availableRecipes).indexOf(this.propertySuggestionList[0]) !== -1) {
+        if (Object.keys(this.availableRecipes).indexOf(this.selectedPropertySuggestion) !== -1) {
+          // Load suggested recipe value
           this.getSuggestedRecipeValue()
         }
+      }
+      // If "shouldAutoConfirmTheOnlySuggestion" is set to true
+      // confirm property selection automatically.
+      // (not implemented at the moment)
+      if (this.propertySuggestionList.length === 1 && this.shouldAutoConfirmTheOnlySuggestion) {
+        this.confirmedProperty = this.propertySuggestionList[0]
       }
     }
   },
@@ -389,12 +473,8 @@ export default {
     discardProperty (property) {
       let preferences = this.$ls.get('preferences', {})
       let preference = preferences[this.pproperty]
-      console.log(preference)
-      console.log(this.pproperty)
-      console.log(preference === property)
       if (preference !== undefined && preference === property) {
         Vue.delete(preferences, this.pproperty)
-        console.log(preferences)
         this.$ls.set('preferences', preferences)
       }
       this.isResultDiscarded = true
@@ -424,7 +504,6 @@ export default {
       if (val.length === 1) {
         return getValue(val[0])
       }
-
       // else if val.length > 1
       let result = []
       for (let i = 0; i < this.selectedPropertyMultiValueSelection.length; i++) {
@@ -464,7 +543,7 @@ export default {
       let that = this
       this.suggestedRecipeResult = null
       this.isLoadingSuggestedRecipeResult = true
-      let recipe = this.availableRecipes[this.propertySuggestionList[0]]
+      let recipe = this.availableRecipes[this.selectedPropertySuggestion]
       let formData = new FormData()
       formData.append('recipe', recipe.script)
       formData.append('rawData', JSON.stringify(recipe.properties.map(key => {
