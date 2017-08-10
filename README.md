@@ -114,3 +114,12 @@ However, I do think there is value in this project.
 2. The original idea of this project was using Open Data to support user writing. It, to some extent, has acompolished this purpose. What's interesting is that in return it helps to create more formated truthful data with the Custom Recipe function. With little modification of the source code, an API could be created to "replace" the DBpedia API. This API would be able to not only return what's in DBpedia, but also other userful information spotted or calculated from the existing data by its users. As you can see in the 4th screenshot, 48 properties and **3 custom recipes** were found. If a shared database could be set up in the cloud, and functions like "upload local recipes to cloud" and "download recipes from cloud" be added to the application, then this application will be much more powerful, and of course useful.
 
 Hope you like it.
+
+## Many thanks to
+
+- [DBpedia Of Course](http://wiki.dbpedia.org/)
+- [The Great Stanford CoreNLP](https://stanfordnlp.github.io/CoreNLP/)
+- [Fantastic Vue.js](https://vuejs.org/)
+- [Amazing Element UI](http://element.eleme.io/)
+
+and all other libraries and modules involved in this project.
