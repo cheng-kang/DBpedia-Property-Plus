@@ -4,6 +4,12 @@
 
 A tool that supports you to include DBpedia data (properties of DBpedia entity) in your content. And more than that.
 
+## Features
+
+- **Property Suggestion**: based on Named Entity Recognition result on user input.
+- **"Custom Recipe"**: generating custom property using available DBpedia property data with custom scripts.
+- **Preference Suggestion**: users' preferences of properties will be stored locally and be suggested with higher priorty next time.
+
 ## Screenshots
 
 1. General Usage 
@@ -64,7 +70,7 @@ A tool that supports you to include DBpedia data (properties of DBpedia entity) 
   
 ## More thoughts on this project
 
-This is my MSc. summer project, and I might just stop here.
+This is my MSc. summer project, and I might just stop here (or not).
 
 The project itself does not involve anything sophistecated. It basically just combines multiple brilliant APIs and generates very simple content suggestions. 
 
