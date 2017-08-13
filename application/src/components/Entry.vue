@@ -558,6 +558,7 @@ export default {
       return result
     },
     selectRecipe (key) {
+      if (key === '') { return }
       let recipe = this.availableRecipes[key]
       this.recipeName = recipe.name
       this.recipeScript = recipe.script
