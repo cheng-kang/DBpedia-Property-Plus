@@ -6,8 +6,9 @@ import urllib
 import re
 import nltk
 import time
-import execjs
 from operator import itemgetter
+# !!py_mini_racer requires Linux/OSX enviroment
+from py_mini_racer import py_mini_racer
 
 # 
 # !!IMPORTANT!!
@@ -48,10 +49,13 @@ class CustomResultHandler(BaseHandler):
       self.finish(json.dumps({"error": "Invalid Arguments."}))
       return
 
-    ctx = execjs.compile('function run(data, rawData) {'+recipe+'}')
+    ctx = py_mini_racer.MiniRacer()
+    ctx.eval("var fun = (data, rawData) => {"+recipe+"};")
+    print "var fun = (data, rawData) => {"+recipe+"};"
+    print data
+    print rawData
     try:
-      result = ctx.call("run", data, rawData)
-      print result
+      result = ctx.call("fun", data, rawData)
       self.write(json.dumps({"result": result}))
     except:
       self.write(json.dumps({"error": "Please check your recipe."}))
