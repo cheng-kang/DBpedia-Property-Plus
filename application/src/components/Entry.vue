@@ -221,6 +221,7 @@
 <script>
 import Vue from 'vue'
 import { mapState } from 'vuex'
+import { UPDATE_PPR_DIALOG_VISIBILITY, UPDATE_PPR_PAIR } from '../store/types'
 import fuzz from 'fuzzball'
 import pluralize from 'pluralize'
 import PropertyValue from './PropertyValue'
@@ -243,6 +244,7 @@ export default {
       //    confirmedPairIndex: is the confirmed selection
       selectedPairIndex: 0,
       confirmedPairIndex: null,
+
       //
       // ↓↓↓All variables below are data of the confirmed pair↓↓↓
       //
@@ -400,9 +402,11 @@ export default {
         }
       }
       let recipeKeys = Object.keys(this.availableRecipes)
+      let recipeSuggestionList = []
       for (let i = 0; i < recipeKeys.length; i++) {
         if (fuzz.token_set_ratio(this.pproperty, recipeKeys[i]) === 100) {
           this.propertySuggestionList.push(recipeKeys[i])
+          recipeSuggestionList.push(recipeKeys[i])
         }
       }
 
@@ -414,15 +418,57 @@ export default {
       let preference = preferences[this.pproperty]
 
       // If preference exist, suggest preference
-      if (preference !== undefined && Object.keys(this.availableRecipes).indexOf(preference) !== -1) {
+      if (preference !== undefined && (Object.keys(this.availableRecipes).indexOf(preference) !== -1 || this.propertyList.indexOf(preference) !== -1)) {
         let preferenceIndex = this.propertySuggestionList.indexOf(preference)
-        if (preferenceIndex !== -1) {
+        if (preferenceIndex > 0) {
           // When it's already in the suggestion list,
-          // remove it firstly.
+          // remove it
           this.propertySuggestionList.splice(preferenceIndex, 1)
+          // then insert preference at index 0
+          this.propertySuggestionList.splice(0, 0, preference)
         }
-        // Insert preference at index 0
-        this.propertySuggestionList.splice(0, 0, preference)
+      }
+
+      //
+      // Check Priority Rules
+      //
+      let arrayContainsArray = (superset, subset) => {
+        if (subset.length === 0) {
+          return false
+        }
+        return subset.every(function (value) {
+          return (superset.indexOf(value) >= 0)
+        })
+      }
+      let priorityRules = this.$ls.get('priorityRules', [])
+      for (let i = 0; i < recipeSuggestionList.length; i++) {
+        for (let j = i + 1; j < recipeSuggestionList.length; j++) {
+          let name1 = recipeSuggestionList[i]
+          let name2 = recipeSuggestionList[j]
+          let arr1 = this.availableRecipes[name1].properties
+          let arr2 = this.availableRecipes[name2].properties
+          if (arrayContainsArray(arr1, arr2)) {
+            if (priorityRules.indexOf(`${name1}>${name2}`) === -1) {
+              this.notifyPotentialPriorityRule([name1, name2])
+            } else {
+              let idx1 = this.propertySuggestionList.indexOf(name1)
+              let idx2 = this.propertySuggestionList.indexOf(name2)
+              let temp = this.propertySuggestionList[idx1]
+              this.propertySuggestionList[idx1] = this.propertySuggestionList[idx2]
+              this.propertySuggestionList[idx2] = temp
+            }
+          } else if (arrayContainsArray(arr2, arr1)) {
+            if (priorityRules.indexOf(`${name2}>${name1}`) === -1) {
+              this.notifyPotentialPriorityRule([name2, name1])
+            } else {
+              let idx1 = this.propertySuggestionList.indexOf(name1)
+              let idx2 = this.propertySuggestionList.indexOf(name2)
+              let temp = this.propertySuggestionList[idx1]
+              this.propertySuggestionList[idx1] = this.propertySuggestionList[idx2]
+              this.propertySuggestionList[idx2] = temp
+            }
+          }
+        }
       }
 
       //
@@ -585,20 +631,13 @@ export default {
     },
     refreshAvailableRecipe () {
       let recipes = this.$ls.get('recipes', {})
-      console.log(recipes)
       let that = this
       let availableRecipesKeys = Object.keys(recipes).filter(key => {
         for (let i = 0; i < recipes[key].properties.length; i++) {
           if (that.propertyList.indexOf(recipes[key].properties[i]) === -1) {
-            console.log('fail')
-            console.log(that.propertyList)
-            console.log(key)
-            console.log(recipes[key].properties[i])
             return false
           }
         }
-        console.log('success')
-        console.log(key)
         return true
       })
       let _availableRecipes = {}
@@ -665,6 +704,32 @@ export default {
       this.$message({
         message: msg,
         type: type
+      })
+    },
+    notifyPotentialPriorityRule (pair) {
+      if (pair.length !== 2) { return }
+
+      const h = this.$createElement
+      this.$notify({
+        title: 'Potential Priority Rule',
+        message: h('div', {},
+          [
+            'Detected potential rule between ',
+            h('el-tag', { attrs: { type: 'primary' } }, pair[0]),
+            ' and ',
+            h('el-tag', { attrs: { type: 'primary' } }, pair[1]),
+            '. Click ',
+            h('el-button', {
+              attrs: { type: 'text', size: 'mini' },
+              on: {
+                click: () => {
+                  this.$store.commit(UPDATE_PPR_PAIR, pair)
+                  this.$store.commit(UPDATE_PPR_DIALOG_VISIBILITY, true)
+                }
+              }
+            }, 'here'),
+            ' to continue.']),
+        duration: 0
       })
     }
   }

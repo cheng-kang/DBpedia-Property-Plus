@@ -1,5 +1,6 @@
 <template>
   <div class="input-card">
+<!-- 
     <el-card class="box-card" style="background-color: #EFF2F7; margin: 10px 0;">
         <p style="font-size: 12px; color: #475669;">The last sentence has been changed to:</p>
         <p style="font-size: 14px; font-weight: bold;">The population of China compares with the population of the UK</p>
@@ -8,8 +9,9 @@
           <el-button type="info">Replace</el-button>
         </div>
     </el-card>
+     -->
     <el-card class="box-card">
-      <p style="font-size: 16px; font-weight: bold;">
+      <p style="font-size: 16px; color: #1F2D3D;">
         Content to process:
       </p>
       <el-input

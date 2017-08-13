@@ -30,13 +30,27 @@
         </el-collapse>
       </template>
     </el-card>
+    <el-dialog
+      title="Potential Priority Rules"
+      :visible="isPPRDialogVisible"
+      :before-close="beforeClosePPRDialog"
+      >
+      <div>
+        <el-tag type="primary">{{PPRPair[0]}}</el-tag> and <el-tag type="primary">{{PPRPair[1]}}</el-tag> share common properties, do you want to prioritize <el-tag type="primary">{{PPRPair[0]}}</el-tag> when both are available?
+      </div>
+      <span slot="footer" class="dialog-footer">
+        <!-- <el-button @click="handlePPRNever">Never Again</el-button> -->
+        <el-button type="warning" @click="handlePPRLater">Later</el-button>
+        <el-button type="primary" @click="handlePPRConfirm">Confirm</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 
 <script>
 import { mapState } from 'vuex'
 import Entry from './Entry'
-// import * as types from '../store/types'
+import { UPDATE_PPR_DIALOG_VISIBILITY } from '../store/types'
 export default {
   name: 'result-card',
   components: {
@@ -52,10 +66,49 @@ export default {
       isProcessingContent: state => state.isProcessingContent,
       entries: state => state.entries,
       processingStatusMsg: state => state.processingStatusMsg,
-      processingErrorMsg: state => state.processingErrorMsg
+      processingErrorMsg: state => state.processingErrorMsg,
+      isPPRDialogVisible: state => state.isPPRDialogVisible,
+      PPRPair: state => state.PPRPair
     })
   },
   methods: {
+    beforeClosePPRDialog () {
+      this.$store.commit(UPDATE_PPR_DIALOG_VISIBILITY, false)
+    },
+    handlePPRNever () {
+      this.$store.commit(UPDATE_PPR_DIALOG_VISIBILITY, false)
+    },
+    handlePPRLater () {
+      this.$store.commit(UPDATE_PPR_DIALOG_VISIBILITY, false)
+    },
+    handlePPRConfirm () {
+      this.$store.commit(UPDATE_PPR_DIALOG_VISIBILITY, false)
+
+      let priorityRules = this.$ls.get('priorityRules', [])
+      let newRule = `${this.PPRPair[0]}>${this.PPRPair[1]}`
+      if (priorityRules.indexOf(newRule) === -1) {
+        this.$ls.set('priorityRules', [...priorityRules, newRule])
+        const h = this.$createElement
+        this.$notify({
+          title: 'Priority Rule Set',
+          message: h('div', {},
+            [
+              'Successfully prioritized ',
+              h('el-tag', { attrs: { type: 'primary' } }, this.PPRPair[0]),
+              ' against ',
+              h('el-tag', { attrs: { type: 'primary' } }, this.PPRPair[1]),
+              '.'
+            ]),
+          type: 'success'
+        })
+      } else {
+        this.$notify({
+          title: 'Priority Rule Exist',
+          message: 'This rule already exists.',
+          type: 'warning'
+        })
+      }
+    }
   }
 }
 </script>

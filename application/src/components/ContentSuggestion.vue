@@ -53,9 +53,6 @@ export default {
     return {
     }
   },
-  created () {
-    console.log(this)
-  },
   methods: {
     extractTextContent () {
       let span = document.createElement('span')

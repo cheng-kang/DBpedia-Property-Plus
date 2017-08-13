@@ -15,7 +15,13 @@ const state = {
   isProcessingSucceeded: false,
   processingStatusMsg: '',
   processingErrorMsg: '',
-  entries: []
+  entries: [],
+  isPPRDialogVisible: false,
+  // -PPRPair
+  //    A pair of recipes that properties of the second
+  //    is a subset of the properties of the first.
+  //    e.g. death age: ['birth date', 'death date'], and age: ['birth date']
+  PPRPair: []
 }
 
 // mutations
@@ -34,9 +40,6 @@ const mutations = {
     state.processingErrorMsg = error
     state.processingStatusMsg = ''
   },
-  [types.UPDATE_PROCESSING_STATUS_MSG] (state, newValue) {
-    state.processingStatusMsg = newValue
-  },
   [types.UPDATE_PROCESSING_ERROR_MSG] (state, newValue) {
     state.processingErrorMsg = newValue
   },
@@ -45,6 +48,12 @@ const mutations = {
   },
   [types.UPDATE_CONTENT] (state, newValue) {
     state.content = newValue
+  },
+  [types.UPDATE_PPR_DIALOG_VISIBILITY] (state, newValue) {
+    state.isPPRDialogVisible = newValue
+  },
+  [types.UPDATE_PPR_PAIR] (state, newValue) {
+    state.PPRPair = newValue
   }
 }
 
