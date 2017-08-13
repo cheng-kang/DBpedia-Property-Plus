@@ -89,7 +89,7 @@
             </div>
             <div class="button-group">
               <el-button type="danger" @click="discardProperty(selectedPropertySuggestion)">Discard</el-button>
-              <el-button type="info" @click="confirmPropertySelection(selectedPropertySuggestion, propertyList.indexOf(selectedPropertySuggestion) === -1 ? {value: suggestedRecipeResult.result} || '' : getSelectedPropertyValue('suggestion'))">Confirm</el-button>
+              <el-button type="info" @click="confirmPropertySelection(selectedPropertySuggestion, propertyList.indexOf(selectedPropertySuggestion) === -1 ? {value: suggestedRecipeResult.result} || '' : getSelectedPropertyValue('suggestion'), availableRecipes[selectedPropertySuggestion] ? availableRecipes[selectedPropertySuggestion].label || '' : '')">Confirm</el-button>
             </div>
             <div class="clearfix" style="font-size: 10px; color: #8492A6;">
               *If the suggested entity/property is relevant, click "Confirm"; else, click "Discard". If multiple suggestions are provided, by clicking "Confirm"/"Discard", future appearance of the selected suggestion will be affected accordingly.
@@ -166,7 +166,7 @@
             type="textarea"
             class="test"
             :autosize="{ minRows: 4, maxRows: 20}"
-            placeholder="Write your own recipe in *JavaScript*. Note: 1. Add semi-colon after every expression; 2. Add 'return yourVariableName' at the end to return the result you want."
+            placeholder="e.g. return data[0];"
             v-model="recipeScript"
           />
           <div style="padding: 16px 0px 4px 0px;">
@@ -179,6 +179,8 @@
           </div>
           <p class="label">Recipe Name:</p>
           <el-input placeholder="custom recipe" v-model="recipeName"></el-input>
+          <p class="label">Recipe Display Label:</p>
+          <el-input placeholder="*optional" v-model="recipeLabel"></el-input>
           <p class="label">Recipe Value:</p>
           <div class="text-box" :class="{ error: recipeResult && recipeResult.error }"
             v-loading="isLoadingRecipeResult"
@@ -188,7 +190,7 @@
           <template v-if="selectedRecipe && recipeResult && recipeResult.result">
             <div class="button-group">
               <el-button type="danger" @click="discardProperty(selectedRecipe)">Discard</el-button>
-              <el-button type="info" @click="confirmPropertySelection(selectedRecipe, {value: recipeResult.result})">Confirm</el-button>
+              <el-button type="info" @click="confirmPropertySelection(selectedRecipe, {value: recipeResult.result}), availableRecipes[selectedRecipe].label">Confirm</el-button>
             </div>
             <div class="clearfix" style="font-size: 10px; color: #8492A6;">
               *If the suggested entity/property is relevant, click "Confirm"; else, click "Discard". If multiple suggestions are provided, by clicking "Confirm"/"Discard", future appearance of the selected suggestion will be affected accordingly.
@@ -201,7 +203,7 @@
           Confirmed Property:
         </p>
         <div class="text-box" style="background-color: white; width: auto">
-          {{confirmedProperty}}
+          {{confirmedPropertyLabel ? `${confirmedPropertyLabel} (${confirmedProperty})` : confirmedProperty}}
         </div>
         <p class="text-box-title">
           Content suggestions:
@@ -270,6 +272,10 @@ export default {
       //    - recipeName: (Tab: Custom)
       //        is the name of a new recipe or the selected recipe.
       //        It's binded with the recipeName input field.
+      //    - recipeLabel: (Tab: Custom)
+      //        is the diaplay name of a new recipe or the selected recipe.
+      //        If set, the label will be used (rather than recipe name) when generating content suggestion.
+      //        It's binded with the recipeLabel input field.
       //    - recipeScript: (Tab: Custom)
       //        is the script of a new recipe or the selected recipe
       //        It's binded with the recipeSript input field.
@@ -305,12 +311,14 @@ export default {
       isLoadingSuggestedRecipeResult: false,
       recipeProperties: [],
       recipeName: '',
+      recipeLabel: '',
       recipeScript: '',
       recipeResult: null,
       isLoadingRecipeResult: false,
       availableRecipes: [],
       selectedRecipe: '',
       confirmedProperty: null,
+      confirmedPropertyLabel: null,
       confirmedPropertyValue: null,
       shouldAutoConfirmTheOnlySuggestion: false,
       showConfirmedResult: false,
@@ -440,6 +448,11 @@ export default {
           return (superset.indexOf(value) >= 0)
         })
       }
+      let swap = (arr, x, y) => {
+        let origin = arr[x]
+        arr.splice(x, 1, arr[y])
+        Vue.set(arr, y, origin)
+      }
       let priorityRules = this.$ls.get('priorityRules', [])
       for (let i = 0; i < recipeSuggestionList.length; i++) {
         for (let j = i + 1; j < recipeSuggestionList.length; j++) {
@@ -453,9 +466,9 @@ export default {
             } else {
               let idx1 = this.propertySuggestionList.indexOf(name1)
               let idx2 = this.propertySuggestionList.indexOf(name2)
-              let temp = this.propertySuggestionList[idx1]
-              this.propertySuggestionList[idx1] = this.propertySuggestionList[idx2]
-              this.propertySuggestionList[idx2] = temp
+              if (idx1 > idx2) {
+                swap(this.propertySuggestionList, idx1, idx2)
+              }
             }
           } else if (arrayContainsArray(arr2, arr1)) {
             if (priorityRules.indexOf(`${name2}>${name1}`) === -1) {
@@ -463,9 +476,9 @@ export default {
             } else {
               let idx1 = this.propertySuggestionList.indexOf(name1)
               let idx2 = this.propertySuggestionList.indexOf(name2)
-              let temp = this.propertySuggestionList[idx1]
-              this.propertySuggestionList[idx1] = this.propertySuggestionList[idx2]
-              this.propertySuggestionList[idx2] = temp
+              if (idx1 < idx2) {
+                swap(this.propertySuggestionList, idx1, idx2)
+              }
             }
           }
         }
@@ -504,9 +517,11 @@ export default {
     confirmPairSelection () {
       this.confirmedPairIndex = this.selectedPairIndex
     },
-    confirmPropertySelection (property, value) {
+    confirmPropertySelection (property, value, label = '') {
+      console.log(label)
       this.confirmedProperty = property
       this.confirmedPropertyValue = value
+      this.confirmedPropertyLabel = label
       this.showConfirmedResult = true
 
       // Save preference
@@ -561,6 +576,7 @@ export default {
       if (key === '') { return }
       let recipe = this.availableRecipes[key]
       this.recipeName = recipe.name
+      this.recipeLabel = recipe.label || ''
       this.recipeScript = recipe.script
       this.recipeProperties = recipe.properties
       this.recipeResult = null
@@ -609,6 +625,7 @@ export default {
     },
     saveRecipe () {
       let newRecipeName = this.recipeName || 'Custom Recipe'
+      let newRecipeLabel = this.recipeLabel || newRecipeName
       let recipes = this.$ls.get('recipes', {})
       if (this.selectedRecipe !== '') {
         Vue.delete(recipes, this.selectedRecipe)
@@ -618,6 +635,7 @@ export default {
         ...recipes,
         [newRecipeName]: {
           name: newRecipeName,
+          label: newRecipeLabel,
           properties: [...this.recipeProperties],
           script: this.recipeScript
         }})
@@ -625,6 +643,7 @@ export default {
     },
     removeRecipe () {
       Vue.delete(this.availableRecipes, this.recipeName)
+      this.propertySuggestionList.splice(this.propertySuggestionList.indexOf(this.recipeName), 1)
       let recipes = this.$ls.get('recipes', {})
       Vue.delete(recipes, this.recipeName)
       this.$ls.set('recipes', recipes)
@@ -681,9 +700,12 @@ export default {
         }
         return `<a href="${data.uri}" target="blank">${data.value}</a>`
       }
+      // - confirmedPropertyName
+      //    If label available, use label; else, use property name
+      let confirmedPropertyName = this.confirmedPropertyLabel || this.confirmedProperty
       if (this.confirmedPropertyValue instanceof Array) {
         if (this.confirmedPropertyValue.length > 1) {
-          let result = `The ${pluralize(this.confirmedProperty)} of ${this.pentity} are `
+          let result = `The ${pluralize(confirmedPropertyName)} of ${this.pentity} are `
           for (let i = 0; i < this.confirmedPropertyValue.length; i++) {
             let val = getValue(this.confirmedPropertyValue[i])
             if (i === 0) {
@@ -696,10 +718,10 @@ export default {
           }
           return result
         } else {
-          return `The ${pluralize.singular(this.confirmedProperty)} of ${this.pentity} is ${getValue(this.confirmedPropertyValue[0])}.`
+          return `The ${pluralize.singular(confirmedPropertyName)} of ${this.pentity} is ${getValue(this.confirmedPropertyValue[0])}.`
         }
       }
-      return `The ${pluralize.singular(this.confirmedProperty)} of ${this.pentity} is ${getValue(this.confirmedPropertyValue)}.`
+      return `The ${pluralize.singular(confirmedPropertyName)} of ${this.pentity} is ${getValue(this.confirmedPropertyValue)}.`
     },
     toast (e, msg = 'Copied!', type = 'success') {
       this.$message({
