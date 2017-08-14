@@ -640,6 +640,17 @@ export default {
           properties: [...this.recipeProperties],
           script: this.recipeScript
         }})
+      const h = this.$createElement
+      this.$notify({
+        title: 'Recipe Saved',
+        message: h('div', {},
+          [
+            'Recipe ',
+            h('el-tag', { attrs: { type: 'primary' } }, newRecipeName),
+            ' is saved.'
+          ]),
+        type: 'success'
+      })
       this.refreshAvailableRecipe()
     },
     removeRecipe () {
@@ -648,6 +659,17 @@ export default {
       let recipes = this.$ls.get('recipes', {})
       Vue.delete(recipes, this.recipeName)
       this.$ls.set('recipes', recipes)
+      const h = this.$createElement
+      this.$notify({
+        title: 'Recipe Removed',
+        message: h('div', {},
+          [
+            'Recipe ',
+            h('el-tag', { attrs: { type: 'primary' } }, this.recipeName),
+            ' is removed.'
+          ]),
+        type: 'success'
+      })
       this.resetRecipe()
     },
     refreshAvailableRecipe () {
@@ -754,7 +776,7 @@ export default {
               }
             }, 'here'),
             ' to continue.']),
-        duration: 0
+        duration: 15000
       })
     }
   }
