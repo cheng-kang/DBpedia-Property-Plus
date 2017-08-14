@@ -17,6 +17,10 @@ A tool that supports you to include DBpedia data (properties of DBpedia entity) 
     <img src="./other/4.gif" width="200">
 </p>
 
+More screenshots:
+
+[1](./other/screenshot-1.png), [2](./other/screenshot-2.png), [3](./other/screenshot-3.png), [4](./other/screenshot-4.png), [5](./other/screenshot-5.png), [6](./other/screenshot-6.png)
+
 ## Features
 
 - **Property Suggestion**: based on Named Entity Recognition result on user input.
