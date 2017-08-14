@@ -4,6 +4,19 @@
 
 A tool that supports you to include DBpedia data (properties of DBpedia entity) in your content. And more than that.
 
+## Screenshots
+
+1. General Usage 
+2. Custom Recipe - 1, create with property data 
+3. Custom Recipe - 2, run & save
+4. Custom Recipe - 3, custom recipe suggestion
+<p align="center">
+    <img src="./other/1.gif" width="200" style="margin-right: 20px;">
+    <img src="./other/2.gif" width="200" style="margin-right: 20px;">
+    <img src="./other/3.gif" width="200" style="margin-right: 20px;">
+    <img src="./other/4.gif" width="200">
+</p>
+
 ## Features
 
 - **Property Suggestion**: based on Named Entity Recognition result on user input.
@@ -44,25 +57,6 @@ A tool that supports you to include DBpedia data (properties of DBpedia entity) 
     ```
 - **Preference Suggestion**: users' preferences of properties will be stored locally and be suggested with higher priorty next time.
 - **Priority Rules**: priority rules can be set between custom recipes that have common properties to prioritize one over another when both are available. 
-
-## Screenshots
-
-1. General Usage 
-2. Custom Recipe - 1, create with property data 
-3. Custom Recipe - 2, run & save
-4. Custom Recipe - 3, custom recipe suggestion
-<p align="center">
-<img src="./other/1.gif" width="200" style="margin-right: 20px;">
-<img src="./other/2.gif" width="200" style="margin-right: 20px;">
-<img src="./other/3.gif" width="200" style="margin-right: 20px;">
-<img src="./other/4.gif" width="200">
-    </p>
-
-
-
-
-
-
 
 ## Try it yourself
 
