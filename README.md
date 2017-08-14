@@ -43,6 +43,7 @@ A tool that supports you to include DBpedia data (properties of DBpedia entity) 
     return years
     ```
 - **Preference Suggestion**: users' preferences of properties will be stored locally and be suggested with higher priorty next time.
+- **Priority Rules**: priority rules can be set between custom recipes that have common properties to prioritize one over another when both are available. 
 
 ## Screenshots
 
@@ -65,11 +66,11 @@ A tool that supports you to include DBpedia data (properties of DBpedia entity) 
 
 ## Try it yourself
 
-> I'm using virtual machines from the University of Southampton to host the application, so sadly you might not be able to access. However, you could follow the steps and setup up the application in your local enviroment.
+I'm using virtual machines from the University of Southampton to host the application, so sadly you might not be able to access. However, you could follow the steps and setup up the application in your local enviroment.
 
 1. Stanford CoreNLP Server
 
-    > The first thing is to run a local Stanford CoreNLP server. The application needs Stanford parser to parse user input. The parsed data will be further processed by the server part of this project.
+    The first thing is to run a local Stanford CoreNLP server. The application needs Stanford parser to parse user input. The parsed data will be further processed by the server part of this project.
 
     Check this website: [Stanford CoreNLP Server](https://stanfordnlp.github.io/CoreNLP/corenlp-server.html), follow the steps and setup your local own server.
 
@@ -80,17 +81,17 @@ A tool that supports you to include DBpedia data (properties of DBpedia entity) 
     Two most important modules you should install before running the server:
       1. nltk
 
-            > This project uses NLTK to process the parsed sentence data mentioned above. It generates a NLTK tree. Then a simple algorithm is applied to extract entities from the tree according to POS tags of nodes.
+            This project uses NLTK to process the parsed sentence data mentioned above. It generates a NLTK tree. Then a simple algorithm is applied to extract entities from the tree according to POS tags of nodes.
 
             [Install NLTK](http://www.nltk.org/install.html)
 
             If any error related to NLTK occured when running the server script, that's probably because of missing of submodules. Read the log and download whatever needed. [Instructions](http://www.nltk.org/data.html) to follow.
 
-      2. execjs
+      2. py-mini-racer
 
-          > This project uses PyExecJS to execute `Custom Recipes` (which are some JavaScript scripts), and return the result to client. 
+          This project uses py-mini-racer to execute `Custom Recipes` (which are some JavaScript scripts), and return the result to client. Note that `py-mini-racer` requires Linux/Mac OS.
 
-          [Install PyExecJS](https://pypi.python.org/pypi/PyExecJS)
+          [Install py-mini-racer](https://github.com/sqreen/PyMiniRacer)
 
     Once everything installed, `cd` to the directory of the `server.py` file and run `python server.py`.
 
