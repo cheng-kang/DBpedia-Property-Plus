@@ -2,7 +2,7 @@
 
 <p><img src="./other/dbpedia_property_plus.png" width="100"></p>
 
-A tool that supports you to include DBpedia data (properties of DBpedia entity) in your content. And more than that.
+A tool that supports you to find facts/data from DBpedia (properties of DBpedia entity) in your content. And more than that.
 
 ## Screenshots
 
