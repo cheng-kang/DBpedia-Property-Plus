@@ -39,7 +39,7 @@
         <el-tag type="primary">{{PPRPair[0]}}</el-tag> and <el-tag type="primary">{{PPRPair[1]}}</el-tag> share common properties, do you want to prioritize <el-tag type="primary">{{PPRPair[0]}}</el-tag> when both are available?
       </div>
       <span slot="footer" class="dialog-footer">
-        <!-- <el-button @click="handlePPRNever">Never Again</el-button> -->
+        <el-button @click="handlePPRNever">Never Again</el-button>
         <el-button type="warning" @click="handlePPRLater">Later</el-button>
         <el-button type="primary" @click="handlePPRConfirm">Confirm</el-button>
       </span>
@@ -50,7 +50,11 @@
 <script>
 import { mapState } from 'vuex'
 import Entry from './Entry'
-import { UPDATE_PPR_DIALOG_VISIBILITY } from '../store/types'
+import {
+  UPDATE_PPR_DIALOG_VISIBILITY,
+  UPDATE_SHOULD_UPDATE_PRIORITY_RULES,
+  UPDATE_SHOULD_UPDATE_PRIORITY_RULES_MUTED
+ } from '../store/types'
 export default {
   name: 'result-card',
   components: {
@@ -77,6 +81,24 @@ export default {
     },
     handlePPRNever () {
       this.$store.commit(UPDATE_PPR_DIALOG_VISIBILITY, false)
+
+      let priorityRulesMuted = this.$ls.get('priorityRulesMuted', [])
+      let newRule = `${this.PPRPair[0]}>>>${this.PPRPair[1]}`
+      this.$ls.set('priorityRulesMuted', [...priorityRulesMuted, newRule])
+      const h = this.$createElement
+      this.$notify({
+        title: 'Never Ask Again',
+        message: h('div', {},
+          [
+            'Never ask again about priority rule between',
+            h('el-tag', { attrs: { type: 'primary' } }, this.PPRPair[0]),
+            ' and ',
+            h('el-tag', { attrs: { type: 'primary' } }, this.PPRPair[1]),
+            '.'
+          ]),
+        type: 'warning'
+      })
+      this.$store.commit(UPDATE_SHOULD_UPDATE_PRIORITY_RULES_MUTED, true)
     },
     handlePPRLater () {
       this.$store.commit(UPDATE_PPR_DIALOG_VISIBILITY, false)
@@ -85,7 +107,7 @@ export default {
       this.$store.commit(UPDATE_PPR_DIALOG_VISIBILITY, false)
 
       let priorityRules = this.$ls.get('priorityRules', [])
-      let newRule = `${this.PPRPair[0]}>${this.PPRPair[1]}`
+      let newRule = `${this.PPRPair[0]}>>>${this.PPRPair[1]}`
       if (priorityRules.indexOf(newRule) === -1) {
         this.$ls.set('priorityRules', [...priorityRules, newRule])
         const h = this.$createElement
@@ -101,6 +123,7 @@ export default {
             ]),
           type: 'success'
         })
+        this.$store.commit(UPDATE_SHOULD_UPDATE_PRIORITY_RULES, true)
       } else {
         this.$notify({
           title: 'Priority Rule Exist',

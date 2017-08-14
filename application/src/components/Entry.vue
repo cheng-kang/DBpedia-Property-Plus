@@ -454,6 +454,7 @@ export default {
         Vue.set(arr, y, origin)
       }
       let priorityRules = this.$ls.get('priorityRules', [])
+      let priorityRulesMuted = this.$ls.get('priorityRulesMuted', [])
       for (let i = 0; i < recipeSuggestionList.length; i++) {
         for (let j = i + 1; j < recipeSuggestionList.length; j++) {
           let name1 = recipeSuggestionList[i]
@@ -461,7 +462,7 @@ export default {
           let arr1 = this.availableRecipes[name1].properties
           let arr2 = this.availableRecipes[name2].properties
           if (arrayContainsArray(arr1, arr2)) {
-            if (priorityRules.indexOf(`${name1}>${name2}`) === -1) {
+            if (priorityRules.indexOf(`${name1}>>>${name2}`) === -1 && priorityRulesMuted.indexOf(`${name1}>>>${name2}`) === -1) {
               this.notifyPotentialPriorityRule([name1, name2])
             } else {
               let idx1 = this.propertySuggestionList.indexOf(name1)
@@ -471,7 +472,7 @@ export default {
               }
             }
           } else if (arrayContainsArray(arr2, arr1)) {
-            if (priorityRules.indexOf(`${name2}>${name1}`) === -1) {
+            if (priorityRules.indexOf(`${name2}>>>${name1}`) === -1 && priorityRulesMuted.indexOf(`${name2}>>>${name1}`) === -1) {
               this.notifyPotentialPriorityRule([name2, name1])
             } else {
               let idx1 = this.propertySuggestionList.indexOf(name1)
@@ -671,6 +672,7 @@ export default {
     },
     resetRecipe () {
       this.recipeName = ''
+      this.recipeLabel = ''
       this.recipeScript = ''
       this.recipeProperties = []
       this.selectedRecipe = ''

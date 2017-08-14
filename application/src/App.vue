@@ -4,21 +4,26 @@
       <span style="color: #003048; font-weight: bold;">DBpedia Property+</span>
       <p style="font-size: 12px; color: #8492A6; margin: 5px 0 0 0;">Include DBpedia data in your content. And more than that.</p>
     </el-card>
-    <input-card></input-card>
+    <input-card />
     <div style="text-align: center; color: #8492A6; padding: 4px;">
       ⟱
     </div>
-    <result-card></result-card>
+    <result-card />
+    <div style="text-align: center; color: #8492A6; padding: 8px 4px; font-size: 14px;">
+      ------§ Rule Inspector §------
+    </div>
+    <rule-card />
   </div>
 </template>
 
 <script>
 import InputCard from './components/InputCard'
 import ResultCard from './components/ResultCard'
+import RuleCard from './components/RuleCard'
 export default {
   name: 'app',
   components: {
-    InputCard, ResultCard
+    InputCard, ResultCard, RuleCard
   }
 }
 </script>

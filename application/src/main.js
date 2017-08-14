@@ -11,7 +11,7 @@ import ElementUI from 'element-ui'
 import 'element-ui/lib/theme-default/index.css'
 
 let options = {
-  namespace: 'swwps__'
+  namespace: 'DBpedia_Property_Plus__'
 }
 Vue.use(VueLocalStorage, options)
 Vue.use(VueClipboard)

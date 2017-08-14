@@ -21,7 +21,9 @@ const state = {
   //    A pair of recipes that properties of the second
   //    is a subset of the properties of the first.
   //    e.g. death age: ['birth date', 'death date'], and age: ['birth date']
-  PPRPair: []
+  PPRPair: [],
+  shouldUpdatePriorityRules: false,
+  shouldUpdatePriorityRulesMuted: false
 }
 
 // mutations
@@ -54,6 +56,12 @@ const mutations = {
   },
   [types.UPDATE_PPR_PAIR] (state, newValue) {
     state.PPRPair = newValue
+  },
+  [types.UPDATE_SHOULD_UPDATE_PRIORITY_RULES] (state, newValue) {
+    state.shouldUpdatePriorityRules = newValue
+  },
+  [types.UPDATE_SHOULD_UPDATE_PRIORITY_RULES_MUTED] (state, newValue) {
+    state.shouldUpdatePriorityRulesMuted = newValue
   }
 }
 
