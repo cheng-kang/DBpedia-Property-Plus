@@ -1,7 +1,7 @@
 <template>
   <div class="entry">
     <template
-      v-if="pairs.length != 1 && !confirmedPairIndex"
+      v-if="pairs.length != 1 && confirmedPairIndex === null"
     >
       <p style="">Found multiple potential entity-property pairs:</p>
       <el-select v-model="selectedPairIndex" placeholder="Select">
