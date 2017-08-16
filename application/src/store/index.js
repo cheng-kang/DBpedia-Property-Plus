@@ -3,6 +3,7 @@ import Vuex from 'vuex'
 import * as types from './types'
 import * as actions from './actions'
 import * as getters from './getters'
+import LocalStorage from './modules/LocalStorage'
 
 Vue.use(Vuex)
 
@@ -70,6 +71,9 @@ export default new Vuex.Store({
   actions,
   getters,
   mutations,
+  modules: {
+    ls: LocalStorage
+  },
   strict: debug,
   plugins: []
 })

@@ -30,6 +30,8 @@
       </div>
     </template>
     <template v-if="(confirmedPairIndex !== null) && !isResultDiscarded">
+    <!-- ↓↓↓v-loading wrapper div (v-loading is not working with template tag)↓↓↓ -->
+    <div v-loading="replacingPairState === 'loading'">
       <el-popover
         ref="entityPopover"
         placement="top"
@@ -41,7 +43,50 @@
           <el-button size="mini" type="text" v-clipboard:copy="entityLink" @click="toast">link</el-button>
         </div>
       </el-popover>
-      <p v-popover:entityPopover>Entity: <span style="font-weight: bold; text-decoration: underline;">{{pentity}}</span></p>
+      <!-- Entity sameAs Popover -->
+      <el-popover
+        ref="entitySameAsPopover"
+        placement="top"
+        width="180"
+        trigger="hover">
+        <p>Not the correct entity? </p>
+        <p>
+          <small>Click the buttons below to 1) create a new "sameAs" name to this entity; 2) view available "sameAs" names; 3) discard this entity. </small>
+        </p>
+        <div style="text-align: right; margin: 0">
+          <el-button-group>
+            <el-button size="mini" type="danger" @click="isResultDiscarded = true">Discard</el-button>
+            <el-button size="mini" type="info" @click="isSameAsInspectorVisible = true">View</el-button>
+            <el-button size="mini" type="success" @click="isSameAsEditorVisible = true">Add</el-button>
+          </el-button-group>
+        </div>
+      </el-popover>
+      <!-- End: Entity sameAs Popover -->
+      <!-- sameAs Inspector Dialog -->
+      <el-dialog size="large" title='"sameAs" Inspector' :visible="isSameAsInspectorVisible" top="30%" :show-close="false">
+        <entity-same-as-view 
+          :entity="pentity" 
+          :moreSearchResult="moreSearchResult"
+          @loadReplacingPair="loadReplacingPair"
+          @close="isSameAsInspectorVisible = false"
+        />
+        <span slot="footer" class="dialog-footer">
+          <el-button size="small" @click="isSameAsInspectorVisible = false">Dismiss</el-button>
+        </span>
+      </el-dialog>
+      <!-- End: sameAs Inspector Dialog -->
+      <!-- sameAs Editor Dialog -->
+      <el-dialog size="large" title="Add sameAs" :visible="isSameAsEditorVisible" top="30%" :show-close="false">
+        <entity-same-as-editor :entity="pentity" @close="isSameAsEditorVisible = false"/>
+        <span slot="footer" class="dialog-footer">
+          <el-button size="small" icon="close" @click="isSameAsEditorVisible = false">Dismiss</el-button>
+        </span>
+      </el-dialog>
+      <!-- End: sameAs Editor Dialog -->
+      <p>
+        Entity: <span style="font-weight: bold; text-decoration: underline;" v-popover:entityPopover>{{pentity}}</span>
+        <i class="el-icon-information" v-if="replacingPairState !== 'success'" v-popover:entitySameAsPopover></i>
+      </p>
       <p>Property: <span style="font-weight: bold;">{{pproperty}}</span></p>
       <hr>
       <p style="color: #8492A6;" v-show="!showConfirmedResult">
@@ -211,6 +256,7 @@
         <content-suggestion :content="getConfirmedContent()"/>
         <content-suggestion :content="getSimpleSentence()"/>
       </template>
+      </div>
     </template>
     <template v-if="isResultDiscarded">
       <p style="color: #8492A6;">
@@ -228,10 +274,12 @@ import fuzz from 'fuzzball'
 import pluralize from 'pluralize'
 import PropertyValue from './PropertyValue'
 import ContentSuggestion from './ContentSuggestion'
+import EntitySameAsView from './EntitySameAsView'
+import EntitySameAsEditor from './EntitySameAsEditor'
 export default {
   name: 'entry',
   components: {
-    PropertyValue, ContentSuggestion
+    PropertyValue, ContentSuggestion, EntitySameAsView, EntitySameAsEditor
   },
   props: [
     'entryData'
@@ -322,7 +370,12 @@ export default {
       confirmedPropertyValue: null,
       shouldAutoConfirmTheOnlySuggestion: false,
       showConfirmedResult: false,
-      isResultDiscarded: false
+      isResultDiscarded: false,
+      isSameAsInspectorVisible: false,
+      isSameAsEditorVisible: false,
+      replacingEntityName: null,
+      replacingPair: null,
+      replacingPairState: 'prepare' // 'prepare', 'loading', 'success', 'fail'
     }
   },
   computed: {
@@ -342,7 +395,7 @@ export default {
     // ↓↓↓All variable below are data of the confirmed pair↓↓↓
     //
     pair () {
-      return this.entryData.pairs[this.confirmedPairIndex]
+      return this.replacingPair || this.entryData.pairs[this.confirmedPairIndex]
     },
     // Potential entity, prefix 'p' is used to avoid naming collision
     pentity () {
@@ -358,6 +411,9 @@ export default {
     pageName () {
       return this.pair.pageName
     },
+    moreSearchResult () {
+      return this.pair.moreSearchResult
+    },
     pageData () {
       return this.pair.pageData
     },
@@ -371,7 +427,24 @@ export default {
   },
   watch: {
     confirmedPairIndex (newValue) {
+      // In case something unexpected happens.
+      if (newValue === null) { return }
       // Reset related data
+      this.resetData()
+      // Generate property & suggestion data
+      this.generateData()
+    }
+  },
+  created () {
+    if (this.pairs.length === 1) {
+      this.confirmedPairIndex = 0
+    }
+  },
+  methods: {
+    confirmPairSelection () {
+      this.confirmedPairIndex = this.selectedPairIndex
+    },
+    resetData () {
       this.propertyList = []
       this.propertySuggestionList = []
       this.selectedProperty = ''
@@ -379,10 +452,8 @@ export default {
       this.recipeProperties = []
       this.customPropertyOptions = []
       this.confirmedProperty = null
-
-      // In case something unexpected happens.
-      if (newValue === null) { return }
-
+    },
+    generateData () {
       //
       // Init propertyList:
       //    And sort the list with fuzzy matching with pproperty.
@@ -507,16 +578,6 @@ export default {
       if (this.propertySuggestionList.length === 1 && this.shouldAutoConfirmTheOnlySuggestion) {
         this.confirmedProperty = this.propertySuggestionList[0]
       }
-    }
-  },
-  created () {
-    if (this.pairs.length === 1) {
-      this.confirmedPairIndex = 0
-    }
-  },
-  methods: {
-    confirmPairSelection () {
-      this.confirmedPairIndex = this.selectedPairIndex
     },
     confirmPropertySelection (property, value, label = '') {
       console.log(label)
@@ -778,6 +839,35 @@ export default {
             ' to continue.']),
         duration: 15000
       })
+    },
+    viewAlias () {
+      this.$alert('Available alias', `Alias of entity: ${this.pentity}`, {
+        confirmButtonText: 'OK',
+        callback: action => {
+          this.$message({
+            type: 'info',
+            message: `action: ${action}`
+          })
+        }
+      })
+    },
+    loadReplacingPair (name) {
+      this.replacingPairState = 'loading'
+
+      let that = this
+      let formData = new FormData()
+      formData.append('entity_name', name)
+      formData.append('property_name', this.pproperty)
+      Vue.http.post('http://10.7.6.213:8888/replacingPair', formData).then(res => {
+        // Reset related data
+        that.resetData()
+        that.replacingPair = res.body
+        // Generate property & suggestion data
+        that.generateData()
+        that.replacingPairState = 'success'
+      }, res => {
+        that.replacingPairState = 'fail'
+      })
     }
   }
 }
@@ -820,7 +910,7 @@ hr {
   border: 1px solid #dfe6ec;
   padding: 8px;
   border-radius: 5px;
-  overflow: auto;
+  overflow: scroll;
 }
 .hljs {
   background: white;
@@ -848,5 +938,6 @@ hr {
 }
 .el-checkbox {
   margin-left: 0;
+  display: block;
 }
 </style>

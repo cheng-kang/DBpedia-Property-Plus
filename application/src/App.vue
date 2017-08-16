@@ -4,6 +4,9 @@
       <span style="color: #003048; font-weight: bold;">DBpedia Property+</span>
       <p style="font-size: 12px; color: #8492A6; margin: 5px 0 0 0;">Include DBpedia data in your content. And more than that.</p>
     </el-card>
+    <div style="text-align: center; color: #8492A6; padding: 8px 4px; font-size: 14px;">
+      ------§ Content Processor §------
+    </div>
     <input-card />
     <div style="text-align: center; color: #8492A6; padding: 4px;">
       ⟱

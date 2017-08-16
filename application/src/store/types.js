@@ -10,3 +10,5 @@ export const UPDATE_PPR_PAIR = 'update_ppr_pair'
 export const UPDATE_PPR_DIALOG_VISIBILITY = 'update_ppr_dialog_visibility'
 export const UPDATE_SHOULD_UPDATE_PRIORITY_RULES = 'update_should_update_priority_rules'
 export const UPDATE_SHOULD_UPDATE_PRIORITY_RULES_MUTED = 'update_should_update_priority_rules_muted'
+
+export const UPDATE_LOCAL_STORAGE_STATE = 'local_storage/update_local_storage_state'
