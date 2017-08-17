@@ -18,10 +18,10 @@ A tool that supports you to find facts/data from DBpedia (properties of DBpedia 
 </p>
 5. Entity Correction
 <p align="center">
-    <img src="./other/entity_correction-4.png" width="200" style="margin-right: 20px;">
-    <img src="./other/entity_correction-5.png" width="200" style="margin-right: 20px;">
-    <img src="./other/entity_correction-6.png" width="200" style="margin-right: 20px;">
-    <img src="./other/entity_correction-7.png" width="200">
+    <img src="./other/entity_correction-1.png" width="200" style="margin-right: 20px;">
+    <img src="./other/entity_correction-2.png" width="200" style="margin-right: 20px;">
+    <img src="./other/entity_correction-3.png" width="200" style="margin-right: 20px;">
+    <img src="./other/entity_correction-4.png" width="200">
 </p>
 
 More screenshots:
