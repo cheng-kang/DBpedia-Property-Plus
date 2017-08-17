@@ -3,7 +3,7 @@
     <template
       v-if="pairs.length != 1 && confirmedPairIndex === null"
     >
-      <p style="">Found multiple potential entity-property pairs:</p>
+      <p style="">Found <strong>{{pairs.length}}</strong> potential entity-property pairs:</p>
       <el-select v-model="selectedPairIndex" placeholder="Select">
         <el-option
           v-for="(pair, idx) in pairs"
@@ -16,12 +16,7 @@
       </el-select>
       <p>Entity: <span style="font-weight: bold;">{{pairs[selectedPairIndex].entity}}</span></p>
       <p>Property: <span style="font-weight: bold;">{{pairs[selectedPairIndex].property}}</span></p>
-      <hr>
-      <p>
-        Found DBpedia page <a :href="'http://dbpedia.org/page/'+pairs[selectedPairIndex].pageName.replace(/\s/g, '_')" target="blank" style="font-weight: bold;">{{pairs[selectedPairIndex].pageName}}</a>.
-      </p>
-      <hr>
-      <div class="button-group">
+      <div style="padding: 5px 0 8px 0; float: right;">
         <el-button type="danger">Discard</el-button>
         <el-button type="info" @click="confirmPairSelection">Confirm</el-button>
       </div>
