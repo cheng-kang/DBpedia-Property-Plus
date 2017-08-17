@@ -16,6 +16,12 @@ A tool that supports you to find facts/data from DBpedia (properties of DBpedia 
     <img src="./other/3.gif" width="200" style="margin-right: 20px;">
     <img src="./other/4.gif" width="200">
 </p>
+5. Entity Correction
+<p align="center">
+    <img src="./other/entity_correction-1.png" width="200" style="margin-right: 20px;">
+    <img src="./other/entity_correction-2.png" width="200" style="margin-right: 20px;">
+    <img src="./other/entity_correction-3.png" width="200">
+</p>
 
 More screenshots:
 
@@ -59,6 +65,8 @@ More screenshots:
 
     return years
     ```
+- **Entity Correction**: add "sameAs"/"wikiPageDisambiguates" data to detected entity
+- **Accented Character Support**: support accented characters like "ć"
 - **Preference Suggestion**: users' preferences of properties will be stored locally and be suggested with higher priorty next time.
 - **Priority Rules**: priority rules can be set between custom recipes that have common properties to prioritize one over another when both are available. 
 
