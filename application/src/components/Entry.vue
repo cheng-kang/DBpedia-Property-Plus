@@ -39,9 +39,9 @@
           <el-button size="mini" type="text" v-clipboard:copy="pageLink" @click="toast">link</el-button>
         </div>
       </el-popover>
-      <!-- Entity sameAs Popover -->
+      <!-- Entity Correction Popover -->
       <el-popover
-        ref="entitySameAsPopover"
+        ref="entityCorrectionPopover"
         placement="top"
         width="180"
         trigger="hover">
@@ -57,9 +57,9 @@
           </el-button-group>
         </div>
       </el-popover>
-      <!-- End: Entity sameAs Popover -->
-      <!-- sameAs Inspector Dialog -->
-      <el-dialog size="large" title='"sameAs" Inspector' :visible="isSameAsInspectorVisible" top="30%" :show-close="false">
+      <!-- End: Entity Correction Popover -->
+      <!-- Related Entity Inspector Dialog -->
+      <el-dialog size="large" title="Related Entity Inspector" :visible="isSameAsInspectorVisible" top="30%" :show-close="false">
         <related-entity-view
           :entity="pentity"
           :pageName="pageName"
@@ -71,18 +71,18 @@
           <el-button size="small" @click="isSameAsInspectorVisible = false">Dismiss</el-button>
         </span>
       </el-dialog>
-      <!-- End: sameAs Inspector Dialog -->
-      <!-- sameAs Editor Dialog -->
-      <el-dialog size="large" title="Add sameAs" :visible="isSameAsEditorVisible" top="30%" :show-close="false">
+      <!-- End: Related Entity Inspector Dialog -->
+      <!-- Related Entity Editor Dialog -->
+      <el-dialog size="large" title="Related Entity Editor" :visible="isSameAsEditorVisible" top="30%" :show-close="false">
         <related-entity-editor :entity="pentity" :pageName="pageName" @close="isSameAsEditorVisible = false"/>
         <span slot="footer" class="dialog-footer">
           <el-button size="small" icon="close" @click="isSameAsEditorVisible = false">Dismiss</el-button>
         </span>
       </el-dialog>
-      <!-- End: sameAs Editor Dialog -->
+      <!-- End: Related Entity Editor Dialog -->
       <p>
         Entity: <span style="font-weight: bold; text-decoration: underline;" v-popover:entityPopover>{{pentity}}{{pentity === pageName ? '' : ` (${pageName})`}}</span>
-        <i class="el-icon-information" v-show="replacingPair === null" v-popover:entitySameAsPopover></i>
+        <i class="el-icon-information" v-show="replacingPair === null" v-popover:entityCorrectionPopover></i>
       </p>
       <div 
         v-show="replacingPair !== null"

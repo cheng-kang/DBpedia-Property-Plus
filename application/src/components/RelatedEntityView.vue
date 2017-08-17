@@ -4,6 +4,7 @@
       Original Entity: 
       <el-tag type="gray">{{entity}}{{isEntityExist ? '' : ` (${pageName})`}}</el-tag>
     </div>
+    <hr>
     <span v-if="sameAsList.length === 0" style="font-size: 12px;">No "sameAs" for {{entity}}.</span>
     <div v-if="sameAsList.length !== 0" style="font-size: 12px; margin: 10px 0;">Stored "sameAs" list:</div>
     <table style="width: 100%;">
@@ -32,6 +33,7 @@
         </td>
       </tr>
     </table>
+    <hr>
     <span v-if="wikiPageDisambiguatesList.length === 0" style="font-size: 12px;">No "wikiPageDisambiguates" for {{entity}}.</span>
     <div v-if="wikiPageDisambiguatesList.length !== 0" style="font-size: 12px; margin: 10px 0;">Stored "wikiPageDisambiguates" list:</div>
     <table style="width: 100%;">
@@ -48,6 +50,7 @@
         </td>
       </tr>
     </table>
+    <hr>
     <div style="font-size: 12px; margin: 10px 0;">More Search Results:</div>
     <table style="width: 100%;">
       <tr v-for="name in moreSearchResult">
@@ -61,6 +64,7 @@
         </td>
       </tr>
     </table>
+    <hr>
   </div>
 </template>
 
@@ -178,4 +182,8 @@ export default {
 </script>
 
 <style>
+hr {
+  border-top: 0.5px hidden #8492A6;
+  clear: both;
+}
 </style>
