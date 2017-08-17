@@ -5,7 +5,8 @@ const state = {
   preference: 0,
   priorityRule: 0,
   priorityRuleMuted: 0,
-  sameAs: 0
+  sameAs: 0,
+  wikiPageDisambiguates: 0
 }
 
 // getters

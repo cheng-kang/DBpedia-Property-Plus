@@ -39,8 +39,9 @@
         trigger="hover">
         <p>Click buttons below to copy:</p>
         <div style="text-align: center; margin: 0">
-          <el-button size="mini" type="text" v-clipboard:copy="pentity" @click="toast">text</el-button>
-          <el-button size="mini" type="text" v-clipboard:copy="entityLink" @click="toast">link</el-button>
+          <el-button size="mini" type="text" v-clipboard:copy="pentity" @click="toast">entity</el-button>
+          <el-button size="mini" type="text" v-clipboard:copy="pageName" @click="toast" v-if="pentity !== pageName">page name</el-button>
+          <el-button size="mini" type="text" v-clipboard:copy="pageLink" @click="toast">link</el-button>
         </div>
       </el-popover>
       <!-- Entity sameAs Popover -->
@@ -64,8 +65,9 @@
       <!-- End: Entity sameAs Popover -->
       <!-- sameAs Inspector Dialog -->
       <el-dialog size="large" title='"sameAs" Inspector' :visible="isSameAsInspectorVisible" top="30%" :show-close="false">
-        <entity-same-as-view 
-          :entity="pentity" 
+        <related-entity-view
+          :entity="pentity"
+          :pageName="pageName"
           :moreSearchResult="moreSearchResult"
           @loadReplacingPair="loadReplacingPair"
           @close="isSameAsInspectorVisible = false"
@@ -77,16 +79,23 @@
       <!-- End: sameAs Inspector Dialog -->
       <!-- sameAs Editor Dialog -->
       <el-dialog size="large" title="Add sameAs" :visible="isSameAsEditorVisible" top="30%" :show-close="false">
-        <entity-same-as-editor :entity="pentity" @close="isSameAsEditorVisible = false"/>
+        <related-entity-editor :entity="pentity" :pageName="pageName" @close="isSameAsEditorVisible = false"/>
         <span slot="footer" class="dialog-footer">
           <el-button size="small" icon="close" @click="isSameAsEditorVisible = false">Dismiss</el-button>
         </span>
       </el-dialog>
       <!-- End: sameAs Editor Dialog -->
       <p>
-        Entity: <span style="font-weight: bold; text-decoration: underline;" v-popover:entityPopover>{{pentity}}</span>
-        <i class="el-icon-information" v-if="replacingPairState !== 'success'" v-popover:entitySameAsPopover></i>
+        Entity: <span style="font-weight: bold; text-decoration: underline;" v-popover:entityPopover>{{pentity}}{{pentity === pageName ? '' : ` (${pageName})`}}</span>
+        <i class="el-icon-information" v-show="replacingPair === null" v-popover:entitySameAsPopover></i>
       </p>
+      <div 
+        v-show="replacingPair !== null"
+        style="font-size: 10px;border: 0.5px solid #eeeeee; padding: 5px; border-radius: 5px; background-color: #eeeeee;"
+      >
+        Don't want this related entity?
+        <el-button size="mini" type="text" style="color: #475669; text-decoration: underline; font-size: 10px;" @click="replacingPair = null">Go back</el-button>
+      </div>
       <p>Property: <span style="font-weight: bold;">{{pproperty}}</span></p>
       <hr>
       <p style="color: #8492A6;" v-show="!showConfirmedResult">
@@ -274,12 +283,12 @@ import fuzz from 'fuzzball'
 import pluralize from 'pluralize'
 import PropertyValue from './PropertyValue'
 import ContentSuggestion from './ContentSuggestion'
-import EntitySameAsView from './EntitySameAsView'
-import EntitySameAsEditor from './EntitySameAsEditor'
+import RelatedEntityView from './RelatedEntityView'
+import RelatedEntityEditor from './RelatedEntityEditor'
 export default {
   name: 'entry',
   components: {
-    PropertyValue, ContentSuggestion, EntitySameAsView, EntitySameAsEditor
+    PropertyValue, ContentSuggestion, RelatedEntityView, RelatedEntityEditor
   },
   props: [
     'entryData'
@@ -401,8 +410,8 @@ export default {
     pentity () {
       return this.pair.entity
     },
-    entityLink () {
-      return 'http://dbpedia.org/page/' + this.pentity.replace(/ /g, '_')
+    pageLink () {
+      return 'http://dbpedia.org/page/' + this.pageName.replace(/ /g, '_')
     },
     // Potential property, prefix 'p' is used to avoid naming collision
     pproperty () {
@@ -429,6 +438,19 @@ export default {
     confirmedPairIndex (newValue) {
       // In case something unexpected happens.
       if (newValue === null) { return }
+
+      // If default sameAs is set, load sameAs
+      let allSameAs = this.$ls.get('sameAs', {})
+      let currentEntitySameAs = allSameAs[this.pentity]
+      if (currentEntitySameAs !== undefined) {
+        let defaultSameAs = currentEntitySameAs.default || null
+        if (defaultSameAs !== null) {
+          this.loadReplacingPair(defaultSameAs)
+          return
+        }
+      }
+
+      // Else, display current entity data
       // Reset related data
       this.resetData()
       // Generate property & suggestion data
@@ -886,7 +908,7 @@ a {
 }
 .label {
   clear: both;
-  font-size: 12px; 
+  font-size: 12px;
   color: #8492A6;
 }
 .el-select {
@@ -897,11 +919,11 @@ hr {
   clear: both;
 }
 .button-group {
-  float: right; 
+  float: right;
   padding: 16px 0px 4px 0px;
 }
 .text-box-title {
-  color: #8492A6; 
+  color: #8492A6;
   font-weight: bold;
 }
 .text-box {
