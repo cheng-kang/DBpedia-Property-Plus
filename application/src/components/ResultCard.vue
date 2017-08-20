@@ -2,7 +2,7 @@
   <div class="result-card">
     <el-card class="box-card">
       <div
-        v-if="entries.length === 0"
+        v-if="entries === null || entries.length === 0"
         v-loading="isProcessingContent"
         :element-loading-text="processingStatusMsg"
         :class="{ error: processingErrorMsg }"
@@ -11,7 +11,7 @@
         {{processingErrorMsg || 'Click "Process" button to start.'}}
       </div>
       <template
-        v-if="entries.length !== 0"
+        v-if="entries !== null && entries.length !== 0"
       >
         <p style="font-size: 14px; font-weight: bold; color: #8492A6;">
           Found <span style="color: #1F2D3D;">{{entries.length}}</span> potential {{entries.length === 1 ? 'entry' : 'entries'}}:

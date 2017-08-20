@@ -16,7 +16,7 @@ const state = {
   isProcessingSucceeded: false,
   processingStatusMsg: '',
   processingErrorMsg: '',
-  entries: [],
+  entries: null,
   isPPRDialogVisible: false,
   // -PPRPair
   //    A pair of recipes that properties of the second
@@ -40,7 +40,11 @@ const mutations = {
     state.isProcessingContent = false
     state.isProcessingSucceeded = error === ''
     state.entries = entries
-    state.processingErrorMsg = error
+    if (entries.length === 0) {
+      state.processingErrorMsg = 'No entry detected. Please rephrase your sentence.'
+    } else {
+      state.processingErrorMsg = error
+    }
     state.processingStatusMsg = ''
   },
   [types.UPDATE_PROCESSING_ERROR_MSG] (state, newValue) {
